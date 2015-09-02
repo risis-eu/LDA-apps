@@ -1,0 +1,18 @@
+{
+  "name": "geo",
+  "version": "1.0.0",
+  "description": "geo actions",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "geo"
+  ],
+  "author": "Ali Khalili <hyperir@gmail.com> (http://ali1k.com)",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.13.3",
+    "request-promise": "^0.4.3"
+  }
+}
