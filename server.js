@@ -4,7 +4,7 @@ var rp = require("request-promise");
 //Creating Router() object
 
 app.get("/",function(req,res){
-  res.json({"message" : "Hello! I am a Geo app!"});
+  res.json({"message" : "Hello! I am a Geo app! Try this example: /NUTS/NL326"});
 });
 // respond with "hello world" when a GET request is made to the homepage
 app.get('/NUTS/:code?/:width?/:height?', function(req, res) {
