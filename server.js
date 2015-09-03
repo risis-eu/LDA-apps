@@ -53,7 +53,7 @@ app.get('/NUTS/:code?/:width?/:height?', function(req, res) {
             var tmp = el.split(' ');
             output = output + 'arr.push(new google.maps.LatLng('+tmp[1]+','+tmp[0]+')); ';
         })
-        var finalScript = '<!DOCTYPE html><html><head><script src="http://maps.googleapis.com/maps/api/js"></script><script> '+ output + ' function initialize(){var mapProp = {center: arr[0],zoom:7,mapTypeId: google.maps.MapTypeId.ROADMAP};' + ' var map=new google.maps.Map(document.getElementById("googleMap"),mapProp);' + ' var regionPath=new google.maps.Polygon({path: arr,strokeColor:"#0000FF",strokeOpacity:0.8,strokeWeight:2,fillColor:"#0000FF",fillOpacity:0.4});' + ' regionPath.setMap(map);}' + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div></body></html>';
+        var finalScript = '<!DOCTYPE html><html><head><title>NUTS: '+req.params.code+'</title><script src="http://maps.googleapis.com/maps/api/js"></script><script> '+ output + ' function initialize(){var mapProp = {center: arr[0],zoom:7,mapTypeId: google.maps.MapTypeId.ROADMAP};' + ' var map=new google.maps.Map(document.getElementById("googleMap"),mapProp);' + ' var regionPath=new google.maps.Polygon({path: arr,strokeColor:"#0000FF",strokeOpacity:0.8,strokeWeight:2,fillColor:"#0000FF",fillOpacity:0.4});' + ' regionPath.setMap(map);}' + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div></body></html>';
         res.send(finalScript);
     }).catch(function (err) {
         console.log(err);
@@ -90,7 +90,7 @@ app.get('/PointAndNUTS/:long?/:lat?/:code?/:width?/:height?', function(req, res)
             var tmp = el.split(' ');
             output = output + 'arr.push(new google.maps.LatLng('+tmp[1]+','+tmp[0]+')); ';
         })
-        var finalScript = '<!DOCTYPE html><html><head><script src="http://maps.googleapis.com/maps/api/js"></script><script> '+ output + 'var myPoint=new google.maps.LatLng('+pointLat+','+pointLong+'); var marker;  function initialize(){var mapProp = {center: arr[0],zoom:7,mapTypeId: google.maps.MapTypeId.ROADMAP};' + ' var map=new google.maps.Map(document.getElementById("googleMap"),mapProp); var marker=new google.maps.Marker({position:myPoint,animation:google.maps.Animation.BOUNCE}); marker.setMap(map); ' + ' var regionPath=new google.maps.Polygon({path: arr,strokeColor:"#0000FF",strokeOpacity:0.8,strokeWeight:2,fillColor:"#0000FF",fillOpacity:0.4});' + ' regionPath.setMap(map);}' + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div></body></html>';
+        var finalScript = '<!DOCTYPE html><html><head><title>PointAndNUTS: ('+pointLat+','+pointLong+') and  '+req.params.code+'</title><script src="http://maps.googleapis.com/maps/api/js"></script><script> '+ output + 'var myPoint=new google.maps.LatLng('+pointLat+','+pointLong+'); var marker;  function initialize(){var mapProp = {center: arr[0],zoom:7,mapTypeId: google.maps.MapTypeId.ROADMAP};' + ' var map=new google.maps.Map(document.getElementById("googleMap"),mapProp); var marker=new google.maps.Marker({position:myPoint,animation:google.maps.Animation.BOUNCE}); marker.setMap(map); ' + ' var regionPath=new google.maps.Polygon({path: arr,strokeColor:"#0000FF",strokeOpacity:0.8,strokeWeight:2,fillColor:"#0000FF",fillOpacity:0.4});' + ' regionPath.setMap(map);}' + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div></body></html>';
         res.send(finalScript);
     }).catch(function (err) {
         console.log(err);
@@ -98,10 +98,14 @@ app.get('/PointAndNUTS/:long?/:lat?/:code?/:width?/:height?', function(req, res)
         return 0;
     });
 });
-app.get('/PointToNUTS/:long?/:lat?/:width?/:height?', function(req, res) {
+app.get('/PointToNUTS/:long?/:lat?/:width?/:height?/:sep?', function(req, res) {
     if(!req.params.lat || !req.params.long){
         res.send('');
         return 0;
+    }
+    var sep = 0;
+    if(req.params.sep){
+        sep = 1;
     }
     var width = 500;
     var height = 500;
@@ -114,10 +118,11 @@ app.get('/PointToNUTS/:long?/:lat?/:width?/:height?', function(req, res) {
         height = req.params.height;
     }
     var apiURI = 'http://api.risis.ops.few.vu.nl/PointToNUTS.json?long='+pointLong+'&lat='+pointLat;
+    var codes;
     rp.get({uri: apiURI}).then(function(body){
         var parsed = JSON.parse(body);
         //list of regions
-        var codes = parsed.result.primaryTopic.occursIn;
+        codes = parsed.result.primaryTopic.occursIn;
         var asyncTasks = [];
         var polygons = [];
         codes.forEach(function(item){
@@ -135,29 +140,39 @@ app.get('/PointToNUTS/:long?/:lat?/:width?/:height?', function(req, res) {
           });
         });
         async.parallel(asyncTasks, function(){
-          // All tasks are done now
-          var colors = ['#0bc4a7', '#1a48eb', '#ecdc0b', '#ed1ec6', '#d9990b', '#0c0d17', '#e3104f', '#6d8ecf'];
-          var finalScript = '<!DOCTYPE html><html><head><script src="http://maps.googleapis.com/maps/api/js"></script><script> ' + ' var myPoint=new google.maps.LatLng('+pointLat+','+pointLong+'); var marker; ';
-          polygons.forEach(function(input, i){
-              var points = parseVirtPolygon(input);
-              var output = 'var arr'+i+' = [];';
-              points.forEach(function(el){
-                  var tmp = el.split(' ');
-                  output = output + 'arr'+i+'.push(new google.maps.LatLng('+tmp[1]+','+tmp[0]+')); ';
-              })
-                finalScript = finalScript + output;
-                if(i === 0){
-                    finalScript = finalScript + ' function initialize(){var mapProp = {center: arr'+i+'[0],zoom:7,mapTypeId: google.maps.MapTypeId.ROADMAP};' +' var map=new google.maps.Map(document.getElementById("googleMap"),mapProp); ';
-                }
-                var opacity = i * 0.15 + 0.35;
-                var sopacity = 1 - (i * 0.15);
-                finalScript = finalScript + ' var regionPath'+i+'=new google.maps.Polygon({path: arr'+i+',strokeColor:"'+(colors[colors.length - i - 1])+'",strokeOpacity:'+sopacity+',strokeWeight:2,fillColor:"'+colors[i]+'",fillOpacity:'+opacity+'});' + ' regionPath'+i+'.setMap(map);';
-                if(i === (polygons.length - 1 )){
-                    finalScript = finalScript + ' var marker=new google.maps.Marker({position:myPoint,animation:google.maps.Animation.BOUNCE}); marker.setMap(map); }';
-                }
-          })
-          finalScript = finalScript + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div></body></html>';
-          res.send(finalScript);
+            // All tasks are done now
+            if(sep){
+                //render in different iframes
+                var finalScript = '<!DOCTYPE html><html><head><title>PointToNUTS: ('+pointLat+','+pointLong+')</title></head><body>';
+                codes.forEach(function(item, i){
+                    finalScript = finalScript + '<iframe src="http://lda-apps.risis.ops.few.vu.nl/NUTS/'+item.code+'" width="400" height="400" style="border:none"></iframe> ';
+                });
+                finalScript = finalScript + '</body></html>';
+                res.send(finalScript);
+            }else{
+                var colors = ['#0bc4a7', '#1a48eb', '#ecdc0b', '#ed1ec6', '#d9990b', '#0c0d17', '#e3104f', '#6d8ecf'];
+                var finalScript = '<!DOCTYPE html><html><head><title>PointToNUTS: ('+pointLat+','+pointLong+')</title><script src="http://maps.googleapis.com/maps/api/js"></script><script> ' + ' var myPoint=new google.maps.LatLng('+pointLat+','+pointLong+'); var marker; ';
+                polygons.forEach(function(input, i){
+                    var points = parseVirtPolygon(input);
+                    var output = 'var arr'+i+' = [];';
+                    points.forEach(function(el){
+                        var tmp = el.split(' ');
+                        output = output + 'arr'+i+'.push(new google.maps.LatLng('+tmp[1]+','+tmp[0]+')); ';
+                    })
+                      finalScript = finalScript + output;
+                      if(i === 0){
+                          finalScript = finalScript + ' function initialize(){var mapProp = {center: arr'+i+'[0],zoom:7,mapTypeId: google.maps.MapTypeId.ROADMAP};' +' var map=new google.maps.Map(document.getElementById("googleMap"),mapProp); ';
+                      }
+                      var opacity = i * 0.15 + 0.35;
+                      var sopacity = 1 - (i * 0.15);
+                      finalScript = finalScript + ' var regionPath'+i+'=new google.maps.Polygon({path: arr'+i+',strokeColor:"'+(colors[colors.length - i - 1])+'",strokeOpacity:'+sopacity+',strokeWeight:2,fillColor:"'+colors[i]+'",fillOpacity:'+opacity+'});' + ' regionPath'+i+'.setMap(map);';
+                      if(i === (polygons.length - 1 )){
+                          finalScript = finalScript + ' var marker=new google.maps.Marker({position:myPoint,animation:google.maps.Animation.BOUNCE}); marker.setMap(map); }';
+                      }
+                })
+                finalScript = finalScript + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div></body></html>';
+                res.send(finalScript);
+            }
         });
     }).catch(function (err) {
         console.log(err);
