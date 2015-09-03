@@ -26,10 +26,14 @@ var parseVirtPolygon = function(input) {
     }
 };
 // respond with "hello world" when a GET request is made to the homepage
-app.get('/NUTS/:code?/:width?/:height?', function(req, res) {
+app.get('/NUTS/:code?/:width?/:height?/:color?', function(req, res) {
     if(!req.params.code){
         res.send('');
         return 0;
+    }
+    var color = '#0000FF';
+    if(req.params.color){
+        color = '#' + req.params.color;
     }
     var width = 500;
     var height = 500;
@@ -53,7 +57,7 @@ app.get('/NUTS/:code?/:width?/:height?', function(req, res) {
             var tmp = el.split(' ');
             output = output + 'arr.push(new google.maps.LatLng('+tmp[1]+','+tmp[0]+')); ';
         })
-        var finalScript = '<!DOCTYPE html><html><head><title>NUTS: '+req.params.code+'</title><script src="http://maps.googleapis.com/maps/api/js"></script><script> '+ output + ' function initialize(){var mapProp = {center: arr[0],zoom:7,mapTypeId: google.maps.MapTypeId.ROADMAP};' + ' var map=new google.maps.Map(document.getElementById("googleMap"),mapProp);' + ' var regionPath=new google.maps.Polygon({path: arr,strokeColor:"#0000FF",strokeOpacity:0.8,strokeWeight:2,fillColor:"#0000FF",fillOpacity:0.4});' + ' regionPath.setMap(map);}' + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div></body></html>';
+        var finalScript = '<!DOCTYPE html><html><head><title>NUTS: '+req.params.code+'</title><script src="http://maps.googleapis.com/maps/api/js"></script><script> '+ output + ' function initialize(){var mapProp = {center: arr[0],zoom:7,mapTypeId: google.maps.MapTypeId.ROADMAP};' + ' var map=new google.maps.Map(document.getElementById("googleMap"),mapProp);' + ' var regionPath=new google.maps.Polygon({path: arr,strokeColor:"'+color+'",strokeOpacity:0.8,strokeWeight:2,fillColor:"'+color+'",fillOpacity:0.4});' + ' regionPath.setMap(map);}' + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div></body></html>';
         res.send(finalScript);
     }).catch(function (err) {
         console.log(err);
@@ -119,6 +123,7 @@ app.get('/PointToNUTS/:long?/:lat?/:width?/:height?/:sep?', function(req, res) {
     }
     var apiURI = 'http://api.risis.ops.few.vu.nl/PointToNUTS.json?long='+pointLong+'&lat='+pointLat;
     var codes;
+    var colors = ['#0bc4a7', '#1a48eb', '#ecdc0b', '#ed1ec6', '#d9990b', '#0c0d17', '#e3104f', '#6d8ecf'];
     rp.get({uri: apiURI}).then(function(body){
         var parsed = JSON.parse(body);
         //list of regions
@@ -145,12 +150,11 @@ app.get('/PointToNUTS/:long?/:lat?/:width?/:height?/:sep?', function(req, res) {
                 //render in different iframes
                 var finalScript = '<!DOCTYPE html><html><head><title>PointToNUTS: ('+pointLat+','+pointLong+')</title></head><body>';
                 codes.forEach(function(item, i){
-                    finalScript = finalScript + '<iframe src="http://lda-apps.risis.ops.few.vu.nl/NUTS/'+item.code+'" width="400" height="400" style="border:none"></iframe> ';
+                    finalScript = finalScript + '<iframe src="http://lda-apps.risis.ops.few.vu.nl/NUTS/'+item.code+'/400/400/'+colors[i].split('#')[1]+'" width="400" height="400" style="border:none"></iframe> ';
                 });
                 finalScript = finalScript + '</body></html>';
                 res.send(finalScript);
             }else{
-                var colors = ['#0bc4a7', '#1a48eb', '#ecdc0b', '#ed1ec6', '#d9990b', '#0c0d17', '#e3104f', '#6d8ecf'];
                 var finalScript = '<!DOCTYPE html><html><head><title>PointToNUTS: ('+pointLat+','+pointLong+')</title><script src="http://maps.googleapis.com/maps/api/js"></script><script> ' + ' var myPoint=new google.maps.LatLng('+pointLat+','+pointLong+'); var marker; ';
                 polygons.forEach(function(input, i){
                     var points = parseVirtPolygon(input);
