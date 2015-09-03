@@ -1,11 +1,30 @@
 var express = require("express");
 var app = express();
 var rp = require("request-promise");
+var async = require("async");
 //Creating Router() object
 
 app.get("/",function(req,res){
   res.json({"message" : "Hello! I am a Geo app! Try this example: /NUTS/NL326"});
 });
+var parseVirtPolygon = function(input) {
+    var tmp = input.split(')');
+    var tl = tmp.length;
+    if(tl){
+        if(tl === 3){
+            //normal polygon
+            //console.log(tmp);
+        }else if (tl === 4){
+            //polygon with holes
+            //console.log(tmp);
+        }
+        var tmp2 = tmp[0].split('(');
+        var tmp3 = tmp2[2].split(',');
+        return tmp3;
+    }else{
+        return [];
+    }
+};
 // respond with "hello world" when a GET request is made to the homepage
 app.get('/NUTS/:code?/:width?/:height?', function(req, res) {
     if(!req.params.code){
@@ -24,39 +43,25 @@ app.get('/NUTS/:code?/:width?/:height?', function(req, res) {
     rp.get({uri: apiURI}).then(function(body){
         var parsed = JSON.parse(body);
         var input = parsed.result.primaryTopic.geometry;
-        //console.log(input);
-        var tmp = input.split(')');
-        var tl = tmp.length;
-        if(tl){
-            if(tl === 3){
-                //normal polygon
-                //console.log(tmp);
-            }else if (tl === 4){
-                //polygon with holes
-                //console.log(tmp);
-            }
-            var tmp2 = tmp[0].split('(');
-            var tmp3 = tmp2[2].split(',');
-            var output = 'var arr = [];';
-            var arr = [];
-            tmp3.forEach(function(el){
-                tmp2 = el.split(' ');
-                output = output + 'arr.push(new google.maps.LatLng('+tmp2[1]+','+tmp2[0]+')); ';
-            })
-            var finalScript = '<!DOCTYPE html><html><head><script src="http://maps.googleapis.com/maps/api/js"></script><script> '+ output + ' function initialize(){var mapProp = {center: arr[0],zoom:7,mapTypeId: google.maps.MapTypeId.ROADMAP};' + ' var map=new google.maps.Map(document.getElementById("googleMap"),mapProp);' + ' var regionPath=new google.maps.Polygon({path: arr,strokeColor:"#0000FF",strokeOpacity:0.8,strokeWeight:2,fillColor:"#0000FF",fillOpacity:0.4});' + ' regionPath.setMap(map);}' + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div></body></html>';
-            res.send(finalScript);
-        }else{
+        var points = parseVirtPolygon(input);
+        if(!points.length){
             res.send('');
             return 0;
         }
+        var output = 'var arr = [];';
+        points.forEach(function(el){
+            var tmp = el.split(' ');
+            output = output + 'arr.push(new google.maps.LatLng('+tmp[1]+','+tmp[0]+')); ';
+        })
+        var finalScript = '<!DOCTYPE html><html><head><script src="http://maps.googleapis.com/maps/api/js"></script><script> '+ output + ' function initialize(){var mapProp = {center: arr[0],zoom:7,mapTypeId: google.maps.MapTypeId.ROADMAP};' + ' var map=new google.maps.Map(document.getElementById("googleMap"),mapProp);' + ' var regionPath=new google.maps.Polygon({path: arr,strokeColor:"#0000FF",strokeOpacity:0.8,strokeWeight:2,fillColor:"#0000FF",fillOpacity:0.4});' + ' regionPath.setMap(map);}' + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div></body></html>';
+        res.send(finalScript);
     }).catch(function (err) {
         console.log(err);
         res.send('');
         return 0;
     });
-
 });
-app.get('/PointToNUTS/:long?/:lat?/:code?/:width?/:height?', function(req, res) {
+app.get('/PointAndNUTS/:long?/:lat?/:code?/:width?/:height?', function(req, res) {
     if(!req.params.code || !req.params.lat || !req.params.long){
         res.send('');
         return 0;
@@ -75,31 +80,85 @@ app.get('/PointToNUTS/:long?/:lat?/:code?/:width?/:height?', function(req, res) 
     rp.get({uri: apiURI}).then(function(body){
         var parsed = JSON.parse(body);
         var input = parsed.result.primaryTopic.geometry;
-        //console.log(input);
-        var tmp = input.split(')');
-        var tl = tmp.length;
-        if(tl){
-            if(tl === 3){
-                //normal polygon
-                //console.log(tmp);
-            }else if (tl === 4){
-                //polygon with holes
-                //console.log(tmp);
-            }
-            var tmp2 = tmp[0].split('(');
-            var tmp3 = tmp2[2].split(',');
-            var output = 'var arr = [];';
-            var arr = [];
-            tmp3.forEach(function(el){
-                tmp2 = el.split(' ');
-                output = output + 'arr.push(new google.maps.LatLng('+tmp2[1]+','+tmp2[0]+')); ';
-            })
-            var finalScript = '<!DOCTYPE html><html><head><script src="http://maps.googleapis.com/maps/api/js"></script><script> '+ output + 'var myPoint=new google.maps.LatLng('+pointLat+','+pointLong+'); var marker;  function initialize(){var mapProp = {center: arr[0],zoom:7,mapTypeId: google.maps.MapTypeId.ROADMAP};' + ' var map=new google.maps.Map(document.getElementById("googleMap"),mapProp); var marker=new google.maps.Marker({position:myPoint,animation:google.maps.Animation.BOUNCE}); marker.setMap(map); ' + ' var regionPath=new google.maps.Polygon({path: arr,strokeColor:"#0000FF",strokeOpacity:0.8,strokeWeight:2,fillColor:"#0000FF",fillOpacity:0.4});' + ' regionPath.setMap(map);}' + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div></body></html>';
-            res.send(finalScript);
-        }else{
+        var points = parseVirtPolygon(input);
+        if(!points.length){
             res.send('');
             return 0;
         }
+        var output = 'var arr = [];';
+        points.forEach(function(el){
+            var tmp = el.split(' ');
+            output = output + 'arr.push(new google.maps.LatLng('+tmp[1]+','+tmp[0]+')); ';
+        })
+        var finalScript = '<!DOCTYPE html><html><head><script src="http://maps.googleapis.com/maps/api/js"></script><script> '+ output + 'var myPoint=new google.maps.LatLng('+pointLat+','+pointLong+'); var marker;  function initialize(){var mapProp = {center: arr[0],zoom:7,mapTypeId: google.maps.MapTypeId.ROADMAP};' + ' var map=new google.maps.Map(document.getElementById("googleMap"),mapProp); var marker=new google.maps.Marker({position:myPoint,animation:google.maps.Animation.BOUNCE}); marker.setMap(map); ' + ' var regionPath=new google.maps.Polygon({path: arr,strokeColor:"#0000FF",strokeOpacity:0.8,strokeWeight:2,fillColor:"#0000FF",fillOpacity:0.4});' + ' regionPath.setMap(map);}' + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div></body></html>';
+        res.send(finalScript);
+    }).catch(function (err) {
+        console.log(err);
+        res.send('');
+        return 0;
+    });
+});
+app.get('/PointToNUTS/:long?/:lat?/:width?/:height?', function(req, res) {
+    if(!req.params.lat || !req.params.long){
+        res.send('');
+        return 0;
+    }
+    var width = 500;
+    var height = 500;
+    var pointLong = req.params.long;
+    var pointLat = req.params.lat;
+    if(req.params.width){
+        width = req.params.width;
+    }
+    if(req.params.height){
+        height = req.params.height;
+    }
+    var apiURI = 'http://api.risis.ops.few.vu.nl/PointToNUTS.json?long='+pointLong+'&lat='+pointLat;
+    rp.get({uri: apiURI}).then(function(body){
+        var parsed = JSON.parse(body);
+        //list of regions
+        var codes = parsed.result.primaryTopic.occursIn;
+        var asyncTasks = [];
+        var polygons = [];
+        codes.forEach(function(item){
+          // We don't actually execute the async action here
+          // We add a function containing it to an array of "tasks"
+          asyncTasks.push(function(callback){
+              rp.get({uri: 'http://api.risis.ops.few.vu.nl/NUTStoPolygon/' + item.code + '.json'}).then(function(body2){
+                  var parsed2 = JSON.parse(body2);
+                  var input = parsed2.result.primaryTopic.geometry;
+                  polygons.push(input);
+                  callback();
+              }).catch(function (err) {
+                  callback();
+              });
+          });
+        });
+        async.parallel(asyncTasks, function(){
+          // All tasks are done now
+          var colors = ['#0bc4a7', '#1a48eb', '#ecdc0b', '#ed1ec6', '#d9990b', '#0c0d17', '#e3104f', '#6d8ecf'];
+          var finalScript = '<!DOCTYPE html><html><head><script src="http://maps.googleapis.com/maps/api/js"></script><script> ' + ' var myPoint=new google.maps.LatLng('+pointLat+','+pointLong+'); var marker; ';
+          polygons.forEach(function(input, i){
+              var points = parseVirtPolygon(input);
+              var output = 'var arr'+i+' = [];';
+              points.forEach(function(el){
+                  var tmp = el.split(' ');
+                  output = output + 'arr'+i+'.push(new google.maps.LatLng('+tmp[1]+','+tmp[0]+')); ';
+              })
+                finalScript = finalScript + output;
+                if(i === 0){
+                    finalScript = finalScript + ' function initialize(){var mapProp = {center: arr'+i+'[0],zoom:7,mapTypeId: google.maps.MapTypeId.ROADMAP};' +' var map=new google.maps.Map(document.getElementById("googleMap"),mapProp); ';
+                }
+                var opacity = i * 0.1 + 0.2;
+                var sopacity = i * 0.1 + 0.4;
+                finalScript = finalScript + ' var regionPath'+i+'=new google.maps.Polygon({path: arr'+i+',strokeColor:"#0c0d17",strokeOpacity:'+sopacity+',strokeWeight:2,fillColor:"'+colors[i]+'",fillOpacity:'+opacity+'});' + ' regionPath'+i+'.setMap(map);';
+                if(i === (polygons.length - 1 )){
+                    finalScript = finalScript + ' var marker=new google.maps.Marker({position:myPoint,animation:google.maps.Animation.BOUNCE}); marker.setMap(map); }';
+                }
+          })
+          finalScript = finalScript + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div></body></html>';
+          res.send(finalScript);
+        });
     }).catch(function (err) {
         console.log(err);
         res.send('');

@@ -12,6 +12,7 @@
   "author": "Ali Khalili <hyperir@gmail.com> (http://ali1k.com)",
   "license": "ISC",
   "dependencies": {
+    "async": "^1.4.2",
     "express": "^4.13.3",
     "request-promise": "^0.4.3"
   }
