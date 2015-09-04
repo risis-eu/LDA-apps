@@ -1,5 +1,8 @@
 var express = require("express");
+var bodyParser = require("body-parser");
 var app = express();
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 var rp = require("request-promise");
 var async = require("async");
 //Creating Router() object
@@ -25,7 +28,28 @@ var parseVirtPolygon = function(input) {
         return [];
     }
 };
-// respond with "hello world" when a GET request is made to the homepage
+app.get('/geocode', function(req, res) {
+    res.send('<!DOCTYPE html><html><head><meta charset="utf-8"><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>geocode</title></head><body><div class="ui page grid"> <div class="row"> <div class="ui cards column"> <div class="blue card"> <div class="content"> <div class="ui header center aligned">Address to Geo-Location</div> <div class="description"> <form method="post" class="ui form"> <div class="field required"> <label>Address</label> <div class="ui icon input"> <textarea name="addr" placeholder="Enter your address here..."></textarea> </div> </div> <div class="field"> <input class="ui submit button" type="submit" value="Submit"/> </div> </form> </div> </div> </div> </div> </div></div> </body></html>');
+});
+app.post('/geocode', function (req, res) {
+    var apiKey = 'AIzaSyDvHC2-4XJIJcgcwRAWywJJ_alaPYFNQCE';
+    var apiURI = 'https://maps.googleapis.com/maps/api/geocode/json?address='+encodeURIComponent(req.body.addr)+'&key=' + apiKey;
+    rp.get({uri: apiURI}).then(function(body){
+        var parsed = JSON.parse(body);
+        //res.json(parsed);
+        if(parsed.results.length){
+            var formatted = parsed.results[0].formatted_address;
+            var location = parsed.results[0].geometry.location;
+                res.send('<!DOCTYPE html><html><head><meta charset="utf-8"><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>geocode</title></head><body><div class="ui page grid"> <div class="row"> <div class="ui cards column"> <div class="blue card"> <div class="content"> <div class="ui header center aligned">Address to Geo-Location</div> <div class="description"> <form method="post" class="ui form fields"><div class="field"> <label>Address</label> <div class="ui icon input"> <textarea name="addr">'+req.body.addr+'</textarea> </div> </div><div class="field success"> <label>Fomatted Address</label> <div class="ui icon input"> <textarea>'+formatted+'</textarea> </div> </div> <div class="field success"> <label>Latitude</label> <div class="ui icon input"> <input type="text" value="'+location.lat+'" /> </div> </div> <div class="field success"> <label>Longitude</label> <div class="ui icon input"> <input type="text" value="'+location.lng+'" /> </div> </div> <div class="field"> <input class="ui submit button" type="submit" value="Submit"/> </div></form></div> </div> </div> </div> </div></div> </body></html>');
+        }else{
+            res.send('No result!');
+        }
+    }).catch(function (err) {
+        console.log(err);
+        res.send('');
+        return 0;
+    });
+});
 app.get('/NUTS/:code?/:width?/:height?/:color?', function(req, res) {
     if(!req.params.code){
         res.send('');
