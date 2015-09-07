@@ -15,6 +15,7 @@
     "async": "^1.4.2",
     "body-parser": "^1.13.3",
     "express": "^4.13.3",
+    "hogan-express": "^0.5.2",
     "request-promise": "^0.4.3"
   }
 }

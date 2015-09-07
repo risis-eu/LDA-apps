@@ -5,6 +5,15 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 var rp = require("request-promise");
 var async = require("async");
+var path = require('path');
+//-----------template engine
+var hogan  = require("hogan-express");
+app.set('views', path.join(__dirname, '/templates'));
+app.set('view engine', 'html');
+app.set('view options', { layout: false });
+//server.enable('view cache');
+app.engine('html', hogan);
+//------------------
 //Creating Router() object
 
 app.get("/",function(req,res){
@@ -28,22 +37,46 @@ var parseVirtPolygon = function(input) {
         return [];
     }
 };
-app.get('/geocode', function(req, res) {
-    res.send('<!DOCTYPE html><html><head><meta charset="utf-8"><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>geocode</title></head><body><div class="ui page grid"> <div class="row"> <div class="ui cards column"> <div class="blue card"> <div class="content"> <div class="ui header center aligned">Address to Geo-Location</div> <div class="description"> <form method="post" class="ui form"> <div class="field required"> <label>Address</label> <div class="ui icon input"> <textarea name="addr" placeholder="Enter your address here..."></textarea> </div> </div> <div class="field"> <input class="ui submit button" type="submit" value="Submit"/> </div> </form> </div> </div> </div> </div> </div></div> </body></html>');
+app.get('/addressToMunicipality', function(req, res) {
+    res.render('addressToMunicipality', {});
 });
-app.post('/geocode', function (req, res) {
+app.get('/geocode/:addr?', function(req, res) {
+    if((!req.params.addr)){
+        res.send('Please add an address in the URI: /geocode/{your address}');
+        return 0;
+    }
     var apiKey = 'AIzaSyDvHC2-4XJIJcgcwRAWywJJ_alaPYFNQCE';
-    var apiURI = 'https://maps.googleapis.com/maps/api/geocode/json?address='+encodeURIComponent(req.body.addr)+'&key=' + apiKey;
+    var apiURI = 'https://maps.googleapis.com/maps/api/geocode/json?address='+encodeURIComponent(decodeURIComponent(req.params.addr))+'&key=' + apiKey;
     rp.get({uri: apiURI}).then(function(body){
         var parsed = JSON.parse(body);
         //res.json(parsed);
         if(parsed.results.length){
             var formatted = parsed.results[0].formatted_address;
             var location = parsed.results[0].geometry.location;
-                res.send('<!DOCTYPE html><html><head><meta charset="utf-8"><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>geocode</title></head><body><div class="ui page grid"> <div class="row"> <div class="ui cards column"> <div class="blue card"> <div class="content"> <div class="ui header center aligned">Address to Geo-Location</div> <div class="description"> <form method="post" class="ui form fields"><div class="field"> <label>Address</label> <div class="ui icon input"> <textarea name="addr">'+req.body.addr+'</textarea> </div> </div><div class="field success"> <label>Fomatted Address</label> <div class="ui icon input"> <textarea>'+formatted+'</textarea> </div> </div> <div class="field success"> <label>Latitude</label> <div class="ui icon input"> <input type="text" value="'+location.lat+'" /> </div> </div> <div class="field success"> <label>Longitude</label> <div class="ui icon input"> <input type="text" value="'+location.lng+'" /> </div> </div> <div class="field"> <input class="ui submit button" type="submit" value="Submit"/> </div></form></div> </div> </div> </div> </div></div> <div style="display:none">'+JSON.stringify(parsed)+'</div></body></html>');
+                res.send('<!DOCTYPE html><html><head><meta charset="utf-8"><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>geocode</title></head><body><div class="ui page grid"> <div class="row"> <div class="ui cards column"> <div class="orange card"> <div class="content"> <div class="ui header center aligned">Address to Geo-Location</div> <div class="description"> <form method="post" class="ui form fields"><div class="field success"> <label>Fomatted Address</label> <div class="ui icon input"> <textarea rows="4">'+formatted+'</textarea> </div> </div> <div class="field success"> <label>Latitude</label> <div class="ui icon input"> <input type="text" value="'+location.lat+'" /> </div> </div> <div class="field success"> <label>Longitude</label> <div class="ui icon input"> <input type="text" value="'+location.lng+'" /> </div> </div> <div class="field"> </div></form></div> </div> </div> </div> </div></div> <div style="display:none">'+JSON.stringify(parsed)+'</div></body></html>');
         }else{
             res.send('No result!');
         }
+    }).catch(function (err) {
+        console.log(err);
+        res.send('');
+        return 0;
+    });
+});
+app.get('/NUTStoMunicipality/:code?', function(req, res) {
+    if(!req.params.code){
+        res.send('Please enter the NUTS code! /NUTStoMunicipality/{code}');
+        return 0;
+    }
+    var apiURI = 'http://api.risis.ops.few.vu.nl/NUTStoMunicipality/' + req.params.code + '.json';
+    rp.get({uri: apiURI}).then(function(body){
+        var parsed = JSON.parse(body);
+        var output = '<!DOCTYPE html><html><head><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>NUTStoMunicipality</title></head><body><table class="ui unstackable table"><thead><tr><th>Name</th><th>Code</th> <th class="right aligned">is Core ?</th></tr></thead><tbody>';
+        parsed.result.items.forEach(function(el){
+            output = output + '<tr><td>'+el.title+'</td><td>'+el.municipalityID+'</td><td class="right aligned">'+el.isCore+'</td></tr>';
+        });
+        output = output + '  </tbody></table></body></html>';
+        res.send(output);
     }).catch(function (err) {
         console.log(err);
         res.send('');
