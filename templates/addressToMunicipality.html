@@ -18,7 +18,7 @@
                                             <div class="field required">
                                                 <label>Address</label>
                                                 <div class="ui icon input">
-                                                  <textarea name="addr" placeholder="Enter your address here..."></textarea>
+                                                  <textarea name="addr" placeholder="Enter your address here...">{{input}}</textarea>
                                                 </div>
                                             </div>
                                             <div class="field">
@@ -31,22 +31,28 @@
                      </div>
                 </div>
                 <div class="eight wide column">
+                    {{#address}}
                     <div class="ui cards">
                             <span class="top left attached ribbon ui blue label">1</span>
-                             <iframe src="/geocode/Uilesntede%20510" height="400" width="100%" style="border:none;overflow: scroll;"></iframe>
+                             <iframe src="/geocode/{{address}}" height="400" width="100%" style="border:none;overflow: scroll;"></iframe>
                      </div>
+                     {{/address}}
                 </div>
                 <div class="eight wide column">
+                    {{#point}}
                     <div class="ui cards">
                             <span class="top left attached ribbon ui blue label">2</span>
-                             <iframe src="/PointToNUTS/4.485209/52.157148" height="500" width="500" style="border:none;overflow: scroll;"></iframe>
+                             <iframe src="/PointToNUTS/{{point.long}}/{{point.lat}}" height="500" width="500" style="border:none;overflow: scroll;"></iframe>
                      </div>
+                     {{/point}}
                 </div>
                 <div class="eight wide column">
+                    {{#nCode}}
                     <div class="ui cards">
                             <span class="top left attached ribbon ui blue label">3</span>
-                             <iframe src="/NUTStoMunicipality/NL326" height="500" width="100%" style="border:none;overflow: scroll;"></iframe>
+                             <iframe src="/NUTStoMunicipality/{{nCode}}" height="500" width="100%" style="border:none;overflow: scroll;"></iframe>
                      </div>
+                     {{/nCode}}
                 </div>
             </div>
         </div>

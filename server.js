@@ -38,7 +38,49 @@ var parseVirtPolygon = function(input) {
     }
 };
 app.get('/addressToMunicipality', function(req, res) {
-    res.render('addressToMunicipality', {});
+    res.render('addressToMunicipality', {input: ''});
+});
+app.post('/addressToMunicipality', function(req, res) {
+    if((!req.body.addr)){
+        res.send('Please add an address in the URI: /geocode/{your address}');
+        return 0;
+    }
+    var longitude, latitude, nCode;
+    var apiKey = 'AIzaSyDvHC2-4XJIJcgcwRAWywJJ_alaPYFNQCE';
+    var apiURI = 'https://maps.googleapis.com/maps/api/geocode/json?address='+encodeURIComponent(decodeURIComponent(req.body.addr))+'&key=' + apiKey;
+    rp.get({uri: apiURI}).then(function(body){
+        var parsed = JSON.parse(body);
+        //res.json(parsed);
+        if(parsed.results.length){
+            //var formatted = parsed.results[0].formatted_address;
+            var location = parsed.results[0].geometry.location;
+            latitude = location.lat;
+            longitude = location.lng;
+            var apiURI = 'http://api.risis.ops.few.vu.nl/PointToNUTS.json?long='+longitude+'&lat='+latitude;
+            var codes;
+            rp.get({uri: apiURI}).then(function(body2){
+                var parsed = JSON.parse(body2);
+                //list of regions
+                codes = parsed.result.primaryTopic.occursIn;
+                codes.forEach(function(item){
+                    if(item.level === 3){
+                        nCode = item.code;
+                    }
+                });
+                res.render('addressToMunicipality', {input: req.body.addr, address: encodeURIComponent(req.body.addr), point:{long: longitude, lat: latitude}, nCode: nCode});
+            }).catch(function (err) {
+                console.log(err);
+                res.send('');
+                return 0;
+            });
+        }else{
+            res.send('No result!');
+        }
+    }).catch(function (err) {
+        console.log(err);
+        res.send('');
+        return 0;
+    });
 });
 app.get('/geocode/:addr?', function(req, res) {
     if((!req.params.addr)){
