@@ -53,7 +53,7 @@ app.get('/geocode/:addr?', function(req, res) {
         if(parsed.results.length){
             var formatted = parsed.results[0].formatted_address;
             var location = parsed.results[0].geometry.location;
-                res.send('<!DOCTYPE html><html><head><meta charset="utf-8"><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>geocode</title></head><body><div class="ui page grid"> <div class="row"> <div class="ui cards column"> <div class="orange card"> <div class="content"> <div class="ui header center aligned">Address to Geo-Location</div> <div class="description"> <form method="post" class="ui form fields"><div class="field success"> <label>Fomatted Address</label> <div class="ui icon input"> <textarea rows="4">'+formatted+'</textarea> </div> </div> <div class="field success"> <label>Latitude</label> <div class="ui icon input"> <input type="text" value="'+location.lat+'" /> </div> </div> <div class="field success"> <label>Longitude</label> <div class="ui icon input"> <input type="text" value="'+location.lng+'" /> </div> </div> <div class="field"> </div></form></div> </div> </div> </div> </div></div> <div style="display:none">'+JSON.stringify(parsed)+'</div></body></html>');
+                res.send('<!DOCTYPE html><html><head><meta charset="utf-8"><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>geocode</title></head><body><div class="ui page grid"> <div class="row"> <div class="ui segments column"><div class="ui orange segment"><h3><a target="_blank" href="/geocode/'+encodeURIComponent(req.params.addr)+'">Address to Coordinates</a></h3> </div> <div class="ui segment"> <div class="content"> <div class="description"> <form method="post" class="ui form fields"><div class="field success"> <label>Fomatted Address</label> <div class="ui icon input"> <textarea rows="4">'+formatted+'</textarea> </div> </div> <div class="field success"> <label>Latitude</label> <div class="ui icon input"> <input type="text" value="'+location.lat+'" /> </div> </div> <div class="field success"> <label>Longitude</label> <div class="ui icon input"> <input type="text" value="'+location.lng+'" /> </div> </div> <div class="field"> </div></form></div> </div> </div> </div> </div></div> <div style="display:none">'+JSON.stringify(parsed)+'</div></body></html>');
         }else{
             res.send('No result!');
         }
@@ -71,11 +71,11 @@ app.get('/NUTStoMunicipality/:code?', function(req, res) {
     var apiURI = 'http://api.risis.ops.few.vu.nl/NUTStoMunicipality/' + req.params.code + '.json';
     rp.get({uri: apiURI}).then(function(body){
         var parsed = JSON.parse(body);
-        var output = '<!DOCTYPE html><html><head><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>NUTStoMunicipality</title></head><body><table class="ui unstackable table"><thead><tr><th>Name</th><th>Code</th> <th class="right aligned">is Core ?</th></tr></thead><tbody>';
+        var output = '<!DOCTYPE html><html><head><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>NUTStoMunicipality</title></head><body><div class="ui segments"><div class="ui segment"><h3><a target="_blank" href="/NUTStoMunicipality/'+req.params.code+'">NUTS to Municipality</a></h3></div><div class="ui segment"><table class="ui unstackable table"><thead><tr><th>Name</th><th>Code</th> <th class="right aligned">is Core ?</th></tr></thead><tbody>';
         parsed.result.items.forEach(function(el){
-            output = output + '<tr><td>'+el.title+'</td><td>'+el.municipalityID+'</td><td class="right aligned">'+el.isCore+'</td></tr>';
+            output = output + '<tr><td>'+el.title+'</td><td>'+el.municipalityID+'</td><td class="right aligned">'+(parseInt(el.isCore) ? '<i class="ui big green checkmark icon"></i>' : '')+'</td></tr>';
         });
-        output = output + '  </tbody></table></body></html>';
+        output = output + '  </tbody></table></div></div></body></html>';
         res.send(output);
     }).catch(function (err) {
         console.log(err);
@@ -212,7 +212,7 @@ app.get('/PointToNUTS/:long?/:lat?/:width?/:height?/:sep?', function(req, res) {
                 finalScript = finalScript + '</body></html>';
                 res.send(finalScript);
             }else{
-                var finalScript = '<!DOCTYPE html><html><head><title>PointToNUTS: ('+pointLat+','+pointLong+')</title><script src="http://maps.googleapis.com/maps/api/js"></script><script> ' + ' var myPoint=new google.maps.LatLng('+pointLat+','+pointLong+'); var marker; ';
+                var finalScript = '<!DOCTYPE html><html><head><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>PointToNUTS: ('+pointLat+','+pointLong+')</title><script src="http://maps.googleapis.com/maps/api/js"></script><script> ' + ' var myPoint=new google.maps.LatLng('+pointLat+','+pointLong+'); var marker; ';
                 polygons.forEach(function(input, i){
                     var points = parseVirtPolygon(input);
                     var output = 'var arr'+i+' = [];';
@@ -237,7 +237,7 @@ app.get('/PointToNUTS/:long?/:lat?/:width?/:height?/:sep?', function(req, res) {
                           finalScript = finalScript + ' var marker=new google.maps.Marker({position:myPoint,animation:google.maps.Animation.BOUNCE}); marker.setMap(map); }';
                       }
                 })
-                finalScript = finalScript + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div></body></html>';
+                finalScript = finalScript + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div class="ui segments"><div class="ui segment"><h3><a target="_blank" href="/PointToNUTS/'+pointLong+'/'+pointLat+'">Coordinates to NUTS</a></h3></div><div class="ui segment"><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div></div></div></body></html>';
                 res.send(finalScript);
             }
         });
