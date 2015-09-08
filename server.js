@@ -61,13 +61,23 @@ app.post('/addressToMunicipality', function(req, res) {
             rp.get({uri: apiURI}).then(function(body2){
                 var parsed = JSON.parse(body2);
                 //list of regions
+                var n1, n2;
                 codes = parsed.result.primaryTopic.occursIn;
+                //console.log(codes);
                 codes.forEach(function(item){
                     if(item.level === 3){
                         nCode = item.code;
+                    }else{
+                        if(item.level === 2){
+                            n2 = item.code;
+                        }else {
+                            if(item.level === 1){
+                                n1 = item.code;
+                            }
+                        }
                     }
                 });
-                res.render('addressToMunicipality', {input: req.body.addr, address: encodeURIComponent(req.body.addr), point:{long: longitude, lat: latitude}, nCode: nCode});
+                res.render('addressToMunicipality', {input: req.body.addr, address: encodeURIComponent(req.body.addr), point:{long: longitude, lat: latitude}, nCode: nCode ? nCode : (n2 ? n2 : (n1 ? n1 : ''))});
             }).catch(function (err) {
                 console.log(err);
                 res.send('');
@@ -229,7 +239,9 @@ app.get('/PointToNUTS/:long?/:lat?/:width?/:height?/:sep?', function(req, res) {
         codes = parsed.result.primaryTopic.occursIn;
         var asyncTasks = [];
         var polygons = [];
+        var nutsLinks = [];
         codes.forEach(function(item){
+            nutsLinks.push('<a target="_blank" class="ui label" href="/NUTS/'+item.code+'"">'+item.code+'</a>');
           // We don't actually execute the async action here
           // We add a function containing it to an array of "tasks"
           asyncTasks.push(function(callback){
@@ -279,7 +291,7 @@ app.get('/PointToNUTS/:long?/:lat?/:width?/:height?/:sep?', function(req, res) {
                           finalScript = finalScript + ' var marker=new google.maps.Marker({position:myPoint,animation:google.maps.Animation.BOUNCE}); marker.setMap(map); }';
                       }
                 })
-                finalScript = finalScript + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div class="ui segments"><div class="ui segment"><h3><a target="_blank" href="/PointToNUTS/'+pointLong+'/'+pointLat+'">Coordinates to NUTS</a></h3></div><div class="ui segment"><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div></div></div></body></html>';
+                finalScript = finalScript + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div class="ui segments"><div class="ui segment"><h3><a target="_blank" href="/PointToNUTS/'+pointLong+'/'+pointLat+'">Coordinates to NUTS</a></h3></div><div class="ui segment">'+nutsLinks.join(' ')+'<div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div></div></div></body></html>';
                 res.send(finalScript);
             }
         });
