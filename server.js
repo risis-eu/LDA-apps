@@ -125,7 +125,7 @@ app.get('/NUTStoMunicipality/:code?', function(req, res) {
         var parsed = JSON.parse(body);
         var output = '<!DOCTYPE html><html><head><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>NUTStoMunicipality</title></head><body><div class="ui segments"><div class="ui segment"><h3><a target="_blank" href="/NUTStoMunicipality/'+req.params.code+'">NUTS to Municipality</a></h3></div><div class="ui segment"><table class="ui unstackable table"><thead><tr><th>Name (<small>FUA</small>)</th><th>Code</th> <th class="right aligned">is Core ?</th></tr></thead><tbody>';
         parsed.result.items.forEach(function(el){
-            output = output + '<tr><td>'+el.title+' (<small>'+el.functionalUrbanArea.title+'</small>)</td><td>'+el.municipalityID+'</td><td class="right aligned">'+(parseInt(el.isCore) ? '<i class="ui big green checkmark icon"></i>' : '')+'</td></tr>';
+            output = output + '<tr><td>'+el.title+' (<small><a href="https://en.wikipedia.org/wiki/'+encodeURIComponent(el.functionalUrbanArea.title)+'" target="_blank">'+el.functionalUrbanArea.title+'</a></small>)</td><td>'+el.municipalityID+'</td><td class="right aligned">'+(parseInt(el.isCore) ? '<i class="ui big green checkmark icon"></i>' : '')+'</td></tr>';
         });
         output = output + '  </tbody></table></div></div></body></html>';
         res.send(output);
