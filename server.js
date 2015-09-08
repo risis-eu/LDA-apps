@@ -120,7 +120,7 @@ app.get('/NUTStoMunicipality/:code?', function(req, res) {
         res.send('Please enter the NUTS code! /NUTStoMunicipality/{code}');
         return 0;
     }
-    var apiURI = 'http://api.risis.ops.few.vu.nl/NUTStoMunicipality/' + req.params.code + '.json';
+    var apiURI = 'http://api.risis.ops.few.vu.nl/NUTStoMunicipality/' + req.params.code + '.json?_pageSize=all';
     rp.get({uri: apiURI}).then(function(body){
         var parsed = JSON.parse(body);
         var output = '<!DOCTYPE html><html><head><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>NUTStoMunicipality</title></head><body><div class="ui segments"><div class="ui segment"><h3><a target="_blank" href="/NUTStoMunicipality/'+req.params.code+'">NUTS to Municipality</a></h3></div><div class="ui segment"><table class="ui unstackable table"><thead><tr><th>Name (<small>FUA</small>)</th><th>Code</th> <th class="right aligned">is Core ?</th></tr></thead><tbody>';
