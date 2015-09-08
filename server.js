@@ -278,7 +278,7 @@ app.get('/PointToNUTS/:long?/:lat?/:width?/:height?/:sep?', function(req, res) {
                       if(i === 0){
                           finalScript = finalScript + ' function initialize(){var mapProp = {center: arr'+i+'[0],zoom:7,mapTypeId: google.maps.MapTypeId.ROADMAP};' +' var map=new google.maps.Map(document.getElementById("googleMap"),mapProp); ';
                       }
-                      var opacity = i * 0.15 + 0.35;
+                      var opacity = i * 0.10 + 0.14;
                       if(opacity >= 0.70){
                           opacity = 0.50;
                       }
