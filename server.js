@@ -1,3 +1,4 @@
+var Config = require('./config');
 var express = require("express");
 var bodyParser = require("body-parser");
 var app = express();
@@ -46,7 +47,7 @@ app.post('/addressToMunicipality', function(req, res) {
         return 0;
     }
     var longitude, latitude, nCode;
-    var apiKey = 'AIzaSyDvHC2-4XJIJcgcwRAWywJJ_alaPYFNQCE';
+    var apiKey = Config.googleKey;
     var apiURI = 'https://maps.googleapis.com/maps/api/geocode/json?address='+encodeURIComponent(decodeURIComponent(req.body.addr))+'&key=' + apiKey;
     rp.get({uri: apiURI}).then(function(body){
         var parsed = JSON.parse(body);
@@ -97,7 +98,7 @@ app.get('/geocode/:addr?', function(req, res) {
         res.send('Please add an address in the URI: /geocode/{your address}');
         return 0;
     }
-    var apiKey = 'AIzaSyDvHC2-4XJIJcgcwRAWywJJ_alaPYFNQCE';
+    var apiKey = Config.googleKey;
     var apiURI = 'https://maps.googleapis.com/maps/api/geocode/json?address='+encodeURIComponent(decodeURIComponent(req.params.addr))+'&key=' + apiKey;
     rp.get({uri: apiURI}).then(function(body){
         var parsed = JSON.parse(body);
