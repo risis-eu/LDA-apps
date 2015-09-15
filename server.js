@@ -175,6 +175,45 @@ app.get('/NUTS/:code?/:width?/:height?/:color?', function(req, res) {
         return 0;
     });
 });
+app.get('/Municipality/:code?/:width?/:height?/:color?', function(req, res) {
+    if(!req.params.code){
+        res.send('');
+        return 0;
+    }
+    var color = '#0000FF';
+    if(req.params.color){
+        color = '#' + req.params.color;
+    }
+    var width = 500;
+    var height = 500;
+    if(req.params.width){
+        width = req.params.width;
+    }
+    if(req.params.height){
+        height = req.params.height;
+    }
+    var apiURI = 'http://api.risis.ops.few.vu.nl/MunicipalityToPolygon/' + req.params.code + '.json';
+    rp.get({uri: apiURI}).then(function(body){
+        var parsed = JSON.parse(body);
+        var input = parsed.result.primaryTopic.geometry;
+        var points = parseVirtPolygon(input);
+        if(!points.length){
+            res.send('');
+            return 0;
+        }
+        var output = 'var arr = [];';
+        points.forEach(function(el){
+            var tmp = el.split(' ');
+            output = output + 'arr.push(new google.maps.LatLng('+tmp[1]+','+tmp[0]+')); ';
+        })
+        var finalScript = '<!DOCTYPE html><html><head><title>NUTS: '+req.params.code+'</title><script src="http://maps.googleapis.com/maps/api/js"></script><script> '+ output + ' function initialize(){var mapProp = {center: arr[0],zoom:7,mapTypeId: google.maps.MapTypeId.ROADMAP};' + ' var map=new google.maps.Map(document.getElementById("googleMap"),mapProp);' + ' var regionPath=new google.maps.Polygon({path: arr,strokeColor:"'+color+'",strokeOpacity:0.8,strokeWeight:2,fillColor:"'+color+'",fillOpacity:0.4});' + ' regionPath.setMap(map);}' + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div></body></html>';
+        res.send(finalScript);
+    }).catch(function (err) {
+        console.log(err);
+        res.send('');
+        return 0;
+    });
+});
 app.get('/PointAndNUTS/:long?/:lat?/:code?/:width?/:height?', function(req, res) {
     if(!req.params.code || !req.params.lat || !req.params.long){
         res.send('');
