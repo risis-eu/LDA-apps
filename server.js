@@ -434,7 +434,95 @@ app.get('/PointToMunicipality/:long?/:lat?/:width?/:height?/:sep?', function(req
         res.send('');
         return 0;
     });
-
+});
+app.get('/Municipalities/:country/:width?/:height?/:sep?/:size?', function(req, res) {
+    if(!req.params.country){
+        res.send('');
+        return 0;
+    }
+    var sep = 0;
+    var pageSize = 'all';
+    if(req.params.size){
+        pageSize = req.params.size;
+    }
+    if(req.params.sep){
+        sep = req.params.sep;
+    }
+    var width = 500;
+    var height = 500;
+    if(req.params.width){
+        width = req.params.width;
+    }
+    if(req.params.height){
+        height = req.params.height;
+    }
+    var apiURI = 'http://api.risis.ops.few.vu.nl/MunicipalitiesPerCountry/'+req.params.country+'.json?_pageSize='+pageSize;
+    var codes;
+    var colors = ['#0bc4a7', '#1a48eb', '#ecdc0b', '#ed1ec6', '#d9990b', '#0c0d17', '#e3104f', '#6d8ecf', '#0bc4a7'];
+    rp.get({uri: apiURI}).then(function(body){
+        var parsed = JSON.parse(body);
+        //list of regions
+        codes = parsed.result.items;
+        if(!Array.isArray(codes)){
+            codes = [codes];
+        }
+        var asyncTasks = [];
+        var polygons = [];
+        var nutsLinks = [];
+        codes.forEach(function(item){
+            nutsLinks.push('<a target="_blank" class="ui label" href="/Municipality/'+item.municipalityID+'"">'+item.municipalityID+'</a>');
+          // We don't actually execute the async action here
+          // We add a function containing it to an array of "tasks"
+          asyncTasks.push(function(callback){
+              rp.get({uri: 'http://api.risis.ops.few.vu.nl/MunicipalityToPolygon/' + item.municipalityID + '.json'}).then(function(body2){
+                  var parsed2 = JSON.parse(body2);
+                  var input = parsed2.result.primaryTopic.geometry;
+                  polygons.push(input);
+                  callback();
+              }).catch(function (err) {
+                  callback();
+              });
+          });
+        });
+        async.parallel(asyncTasks, function(){
+            // All tasks are done now
+            if(sep && sep !== '0'){
+                //render in different iframes
+                var finalScript = '<!DOCTYPE html><html><head><title>Municipalities: ('+req.params.country+')</title></head><body>';
+                codes.forEach(function(item, i){
+                    finalScript = finalScript + '<iframe src="http://lda-apps.risis.ops.few.vu.nl/Municipality/'+item.municipalityID+'/400/400/'+'" width="400" height="400" style="border:none"></iframe> ';
+                });
+                finalScript = finalScript + '</body></html>';
+                res.send(finalScript);
+            }else{
+                var finalScript = '<!DOCTYPE html><html><head><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>PointToMunicipality: ('+req.params.country+')</title><script src="http://maps.googleapis.com/maps/api/js"></script><script> ';
+                polygons.forEach(function(input, i){
+                    var points = parseVirtPolygon(input);
+                    var output = 'var arr'+i+' = [];';
+                    points.forEach(function(el){
+                        var tmp = el.split(' ');
+                        output = output + 'arr'+i+'.push(new google.maps.LatLng('+tmp[1]+','+tmp[0]+')); ';
+                    })
+                      finalScript = finalScript + output;
+                      if(i === 0){
+                          finalScript = finalScript + ' function initialize(){var mapProp = {center: arr'+i+'[0],zoom:7,mapTypeId: google.maps.MapTypeId.ROADMAP};' +' var map=new google.maps.Map(document.getElementById("googleMap"),mapProp); ';
+                      }
+                      var opacity = 0.50;
+                      var sopacity = 0.40;
+                      finalScript = finalScript + ' var regionPath'+i+'=new google.maps.Polygon({path: arr'+i+',strokeColor:"'+(colors[Math.floor(Math.random() * 8) + 1  ])+'",strokeOpacity:'+sopacity+',strokeWeight:2,fillColor:"'+(colors[Math.floor(Math.random() * 8) + 1  ])+'",fillOpacity:'+opacity+'});' + ' regionPath'+i+'.setMap(map);';
+                      if(i === (polygons.length - 1 )){
+                          finalScript = finalScript + ' }';
+                      }
+                })
+                finalScript = finalScript + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div class="ui segments"><div class="ui segment"><h3><a target="_blank" href="/Municipalities/'+req.params.country+'">Municipalities</a></h3></div><div class="ui segment"><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div>'+nutsLinks.join(' ')+'</div></div></body></html>';
+                res.send(finalScript);
+            }
+        });
+    }).catch(function (err) {
+        console.log(err);
+        res.send('');
+        return 0;
+    });
 });
 app.listen(5432,function(){
   console.log("Live at Port 5432");
