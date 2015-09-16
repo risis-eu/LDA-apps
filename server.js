@@ -435,6 +435,8 @@ app.get('/PointToMunicipality/:long?/:lat?/:width?/:height?/:sep?', function(req
         return 0;
     });
 });
+function get_random_color() {var letters = "ABCDE".split("");var color = "#";for (var i=0; i<3; i++ ) {color += letters[Math.floor(Math.random() * letters.length)];}return color;}
+
 app.get('/Municipalities/:country/:width?/:height?/:sep?/:size?', function(req, res) {
     if(!req.params.country){
         res.send('');
@@ -490,13 +492,14 @@ app.get('/Municipalities/:country/:width?/:height?/:sep?/:size?', function(req, 
                 //render in different iframes
                 var finalScript = '<!DOCTYPE html><html><head><title>Municipalities: ('+req.params.country+')</title><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /></head><body><div class="ui cards">';
                 codes.forEach(function(item, i){
-                    finalScript = finalScript + '<div class="ui card"><span class="top left attached ribbon ui blue label">'+item.municipalityID+': '+item.title+'</span><iframe src="http://lda-apps.risis.ops.few.vu.nl/Municipality/'+item.municipalityID+'/400/400/'+'" width="400" height="400" style="border:none"></iframe> </div>';
+                    finalScript = finalScript + '<div class="ui card"><a href="/Municipality/'+item.municipalityID+'" target="_blank"><span class="top left attached ribbon ui blue label">'+item.municipalityID+': '+item.title+'</span></a><iframe src="http://lda-apps.risis.ops.few.vu.nl/Municipality/'+item.municipalityID+'/400/400/'+'" width="400" height="400" style="border:none"></iframe> </div>';
                 });
                 finalScript = finalScript + '</div></body></html>';
                 res.send(finalScript);
             }else{
                 var finalScript = '<!DOCTYPE html><html><head><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.5/leaflet.css" /><style>		.info {padding: 6px 8px;font: 14px/16px Arial, Helvetica, sans-serif;background: white;background: rgba(255,255,255,0.8);box-shadow: 0 0 15px rgba(0,0,0,0.2);border-radius: 5px;}.info h4 {margin: 0 0 5px;color: #777;}</style><title>PointToMunicipality: ('+req.params.country+')</title> ';
                 var features = [];
+                var colorsObject = {};
                 polygons.forEach(function(input, i){
                     var points = parseVirtPolygon(input.geometry);
                     var coordinatesArr = [];
@@ -505,6 +508,7 @@ app.get('/Municipalities/:country/:width?/:height?/:sep?/:size?', function(req, 
                         coordinatesArr.push([parseFloat(tmp[0]), parseFloat(tmp[1])])
                     })
                     features.push({"type": "Feature", "id": input.id, "properties": {"name": input.name, "density": 1}, "geometry": {"type": "Polygon", coordinates: [coordinatesArr]}});
+                    colorsObject[input.id] = get_random_color();
                       if(i === 0){
 
                       }
@@ -515,7 +519,7 @@ app.get('/Municipalities/:country/:width?/:height?/:sep?/:size?', function(req, 
                 var focusPoint = features[0].geometry.coordinates[0][0];
                 var mapboxAccessToken = Config.mapboxKey;
                 var mcpData = {"type":"FeatureCollection","features": features};
-                finalScript = finalScript +  '</head><body><div class="ui segments"><div class="ui segment"><h3><a target="_blank" href="/Municipalities/'+req.params.country+'">Municipalities</a></h3></div><div class="ui segment"><div id="map" style="width:'+width+'px;height:'+height+'px;"></div>'+nutsLinks.join(' ')+'</div></div><script src="http://cdn.leafletjs.com/leaflet-0.7.5/leaflet.js"></script><script>function getColor(d) { var colors = ["#0bc4a7", "#1a48eb", "#ecdc0b", "#ed1ec6", "#d9990b", "#0c0d17", "#e3104f", "#6d8ecf", "#0bc4a7"]; return colors[Math.floor(Math.random() * 8) + 1]}	function style(feature) {return {weight: 2,opacity: 1,color: "white",dashArray: "3",fillOpacity: 0.7,fillColor: getColor(feature.properties.density)};} var map = L.map("map").setView([ '+focusPoint[1]+', '+focusPoint[0]+'], 7); var info = L.control();info.onAdd = function (map) {this._div = L.DomUtil.create("div", "info");this.update();return this._div;};info.update = function (props) {this._div.innerHTML = "<h4>Municipality: </h4>" +  (props ? ("<b>" + props.name + "</b>") : "Hover over a state");}; info.addTo(map);function highlightFeature(e) {var layer = e.target;layer.setStyle({weight: 5,color: "#666",dashArray: "",fillOpacity: 0.7}); if (!L.Browser.ie && !L.Browser.opera) { layer.bringToFront(); } info.update(layer.feature.properties); } function resetHighlight(e) { geojson.resetStyle(e.target); info.update();} function zoomToFeature(e) {map.fitBounds(e.target.getBounds());} function onEachFeature(feature, layer) {layer.on({mouseover: highlightFeature,mouseout: resetHighlight,click: zoomToFeature});}  L.tileLayer("https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}", {attribution: \'Map data &copy; <a href=\"http://openstreetmap.org\">OpenStreetMap</a> contributors, <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"http://mapbox.com\">Mapbox</a>\',maxZoom: 18,id: "mapbox.light",accessToken: "'+mapboxAccessToken+'"}).addTo(map); var geojson = L.geoJson('+JSON.stringify(mcpData)+', {style: style, onEachFeature: onEachFeature}).addTo(map);</script></body></html>';
+                finalScript = finalScript +  '</head><body><div class="ui segments"><div class="ui segment"><h3><a target="_blank" href="/Municipalities/'+req.params.country+'">Municipalities</a></h3></div><div class="ui segment"><div id="map" style="width:'+width+'px;height:'+height+'px;"></div>'+nutsLinks.join(' ')+'</div></div><script src="http://cdn.leafletjs.com/leaflet-0.7.5/leaflet.js"></script><script> var colorObject = '+JSON.stringify(colorsObject)+'; function getColor(d) { return colorObject[d];}	function style(feature) {return {weight: 2,opacity: 1,color: "white",dashArray: "3",fillOpacity: 0.8,fillColor: getColor(feature.id)};} var map = L.map("map").setView([ '+focusPoint[1]+', '+focusPoint[0]+'], 7); var info = L.control();info.onAdd = function (map) {this._div = L.DomUtil.create("div", "info");this.update();return this._div;};info.update = function (props) {this._div.innerHTML = "<h4>Municipality: </h4>" +  (props ? ("<b>" + props.name + "</b>") : "Hover over a state");}; info.addTo(map);function highlightFeature(e) {var layer = e.target;layer.setStyle({weight: 5,color: "#666",dashArray: "",fillOpacity: 0.7}); if (!L.Browser.ie && !L.Browser.opera) { layer.bringToFront(); } info.update(layer.feature.properties); } function resetHighlight(e) { geojson.resetStyle(e.target); info.update();} function zoomToFeature(e) {map.fitBounds(e.target.getBounds());} function onEachFeature(feature, layer) {layer.on({mouseover: highlightFeature,mouseout: resetHighlight,click: zoomToFeature});}  L.tileLayer("https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}", {attribution: \'Map data &copy; <a href=\"http://openstreetmap.org\">OpenStreetMap</a> contributors, <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"http://mapbox.com\">Mapbox</a>\',maxZoom: 18,id: "mapbox.light",accessToken: "'+mapboxAccessToken+'"}).addTo(map); var geojson = L.geoJson('+JSON.stringify(mcpData)+', {style: style, onEachFeature: onEachFeature}).addTo(map);</script></body></html>';
                 res.send(finalScript);
             }
         });
