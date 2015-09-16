@@ -382,6 +382,9 @@ app.get('/PointToMunicipality/:long?/:lat?/:width?/:height?/:sep?', function(req
               rp.get({uri: 'http://api.risis.ops.few.vu.nl/MunicipalityToPolygon/' + item.municipalityID + '.json'}).then(function(body2){
                   var parsed2 = JSON.parse(body2);
                   var input = parsed2.result.primaryTopic.geometry;
+                  if(Array.isArray(input)){
+                      input = parsed2.result.primaryTopic.geometry[0];
+                  }
                   polygons.push(input);
                   callback();
               }).catch(function (err) {
@@ -481,7 +484,10 @@ app.get('/Municipalities/:country/:width?/:height?/:sep?/:size?', function(req, 
                   var parsed2 = JSON.parse(body2);
                   //console.log(parsed2.result.primaryTopic.label);
                   var input = parsed2.result.primaryTopic.geometry;
-                  polygons.push({geometry: input, id: item.municipalityID, name: item.title});
+                  if(Array.isArray(input)){
+                      input = parsed2.result.primaryTopic.geometry[0];
+                  }
+                  polygons.push({geometry: input, id: item.municipalityID, name: item.title, isCore: parsed2.result.primaryTopic.isCore, fua: parsed2.result.primaryTopic.functionalUrbanArea});
                   callback();
               }).catch(function (err) {
                   console.log('atomic: ', err);
@@ -504,13 +510,15 @@ app.get('/Municipalities/:country/:width?/:height?/:sep?/:size?', function(req, 
                 var features = [];
                 var colorsObject = {};
                 polygons.forEach(function(input, i){
+                    //console.log(input.name, input.id);
                     var points = parseVirtPolygon(input.geometry);
+                    //console.log(input.name, input.id);
                     var coordinatesArr = [];
                     points.forEach(function(el){
                         var tmp = el.split(' ');
                         coordinatesArr.push([parseFloat(tmp[0]), parseFloat(tmp[1])])
                     })
-                    features.push({"type": "Feature", "id": input.id, "properties": {"name": input.name, "density": 1}, "geometry": {"type": "Polygon", coordinates: [coordinatesArr]}});
+                    features.push({"type": "Feature", "id": input.id, "properties": {"name": input.name, "isCore": input.isCore, "fua": input.fua}, "geometry": {"type": "Polygon", coordinates: [coordinatesArr]}});
                     colorsObject[input.id] = get_random_color();
                       if(i === 0){
 
@@ -522,7 +530,7 @@ app.get('/Municipalities/:country/:width?/:height?/:sep?/:size?', function(req, 
                 var focusPoint = features[0].geometry.coordinates[0][0];
                 var mapboxAccessToken = Config.mapboxKey;
                 var mcpData = {"type":"FeatureCollection","features": features};
-                finalScript = finalScript +  '</head><body><div class="ui segments"><div class="ui segment"><h3><a target="_blank" href="/Municipalities/'+req.params.country+'">Municipalities</a></h3></div><div class="ui segment"><div id="map" style="width:'+width+'px;height:'+height+'px;"></div>'+nutsLinks.join(' ')+'</div></div><script src="http://cdn.leafletjs.com/leaflet-0.7.5/leaflet.js"></script><script> var colorObject = '+JSON.stringify(colorsObject)+'; function getColor(d) { return colorObject[d];}	function style(feature) {return {weight: 2,opacity: 1,color: "white",dashArray: "3",fillOpacity: 0.8,fillColor: getColor(feature.id)};} var map = L.map("map").setView([ '+focusPoint[1]+', '+focusPoint[0]+'], 7); var info = L.control();info.onAdd = function (map) {this._div = L.DomUtil.create("div", "info");this.update();return this._div;};info.update = function (props) {this._div.innerHTML = "<h4>Municipality: </h4>" +  (props ? ("<b>" + props.name + "</b>") : "Hover over a state");}; info.addTo(map);function highlightFeature(e) {var layer = e.target;layer.setStyle({weight: 5,color: "#666",dashArray: "",fillOpacity: 0.7}); if (!L.Browser.ie && !L.Browser.opera) { layer.bringToFront(); } info.update(layer.feature.properties); } function resetHighlight(e) { geojson.resetStyle(e.target); info.update();} function zoomToFeature(e) {map.fitBounds(e.target.getBounds());} function onEachFeature(feature, layer) {layer.on({mouseover: highlightFeature,mouseout: resetHighlight,click: zoomToFeature});}  L.tileLayer("https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}", {attribution: \'Map data &copy; <a href=\"http://openstreetmap.org\">OpenStreetMap</a> contributors, <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"http://mapbox.com\">Mapbox</a>\',maxZoom: 18,id: "mapbox.light",accessToken: "'+mapboxAccessToken+'"}).addTo(map); var geojson = L.geoJson('+JSON.stringify(mcpData)+', {style: style, onEachFeature: onEachFeature}).addTo(map);</script></body></html>';
+                finalScript = finalScript +  '</head><body><div class="ui segments"><div class="ui segment"><h3><a target="_blank" href="/Municipalities/'+req.params.country+'">Municipalities</a></h3></div><div class="ui segment"><div id="map" style="width:'+width+'px;height:'+height+'px;"></div>'+nutsLinks.join(' ')+'</div></div><script src="http://cdn.leafletjs.com/leaflet-0.7.5/leaflet.js"></script><script> var colorObject = '+JSON.stringify(colorsObject)+'; function getColor(d) { return colorObject[d];}	function style(feature) {return {weight: 2,opacity: 1,color: (parseInt(feature.properties.isCore) ? (feature.properties.name === feature.properties.fua.title ? "black" : "grey") : "white"),dashArray: "3",fillOpacity: 0.8,fillColor: getColor(feature.id)};} var map = L.map("map").setView([ '+focusPoint[1]+', '+focusPoint[0]+'], 7); var info = L.control();info.onAdd = function (map) {this._div = L.DomUtil.create("div", "info");this.update();return this._div;};info.update = function (props) {this._div.innerHTML = "<h4>Municipality: </h4>" +  (props ? ("<b>" + props.name + "</b><br/> is Core? <b>" + (props.isCore ? "yes" : "no")) + "</b><br/> FUA: " + props.fua.title : "Hover over a state");}; info.addTo(map);function highlightFeature(e) {var layer = e.target;layer.setStyle({weight: 5,color: "#666",dashArray: "",fillOpacity: 0.7}); if (!L.Browser.ie && !L.Browser.opera) { layer.bringToFront(); } info.update(layer.feature.properties); } function resetHighlight(e) { geojson.resetStyle(e.target); info.update();} function zoomToFeature(e) {map.fitBounds(e.target.getBounds());} function onEachFeature(feature, layer) {layer.on({mouseover: highlightFeature,mouseout: resetHighlight,click: zoomToFeature});}  L.tileLayer("https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}", {attribution: \'Map data &copy; <a href=\"http://openstreetmap.org\">OpenStreetMap</a> contributors, <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"http://mapbox.com\">Mapbox</a>\',maxZoom: 18,id: "mapbox.light",accessToken: "'+mapboxAccessToken+'"}).addTo(map); var geojson = L.geoJson('+JSON.stringify(mcpData)+', {style: style, onEachFeature: onEachFeature}).addTo(map);</script></body></html>';
                 res.send(finalScript);
             }
         });
