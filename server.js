@@ -476,17 +476,20 @@ app.get('/Municipalities/:country/:width?/:height?/:sep?/:size?', function(req, 
           // We don't actually execute the async action here
           // We add a function containing it to an array of "tasks"
           asyncTasks.push(function(callback){
+              //console.log('http://api.risis.ops.few.vu.nl/MunicipalityToPolygon/' + item.municipalityID + '.json');
               rp.get({uri: 'http://api.risis.ops.few.vu.nl/MunicipalityToPolygon/' + item.municipalityID + '.json'}).then(function(body2){
                   var parsed2 = JSON.parse(body2);
+                  //console.log(parsed2.result.primaryTopic.label);
                   var input = parsed2.result.primaryTopic.geometry;
                   polygons.push({geometry: input, id: item.municipalityID, name: item.title});
                   callback();
               }).catch(function (err) {
+                  console.log('atomic: ', err);
                   callback();
               });
           });
         });
-        async.parallel(asyncTasks, function(){
+        async.parallelLimit(asyncTasks, 20, function(){
             // All tasks are done now
             if(sep && sep !== '0'){
                 //render in different iframes
