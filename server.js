@@ -87,9 +87,7 @@ app.post('/addressToMunicipality', function(req, res) {
                     }
                     res.render('addressToMunicipality', {input: req.body.addr, address: encodeURIComponent(req.body.addr), point:{long: longitude, lat: latitude}, mCode: mCode ? mCode : '', nCode: nCode ? nCode : (n2 ? n2 : (n1 ? n1 : ''))});
                 }).catch(function (err) {
-                    console.log(err);
-                    res.send('');
-                    return 0;
+                    res.render('addressToMunicipality', {input: req.body.addr, address: encodeURIComponent(req.body.addr), point:{long: longitude, lat: latitude}, mCode: '', nCode: nCode ? nCode : (n2 ? n2 : (n1 ? n1 : ''))});
                 });
             }).catch(function (err) {
                 console.log(err);
