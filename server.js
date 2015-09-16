@@ -477,7 +477,7 @@ app.get('/Municipalities/:country/:width?/:height?/:sep?/:size?', function(req, 
               rp.get({uri: 'http://api.risis.ops.few.vu.nl/MunicipalityToPolygon/' + item.municipalityID + '.json'}).then(function(body2){
                   var parsed2 = JSON.parse(body2);
                   var input = parsed2.result.primaryTopic.geometry;
-                  polygons.push(input);
+                  polygons.push({geometry: input, id: item.municipalityID, name: item.title});
                   callback();
               }).catch(function (err) {
                   callback();
@@ -488,33 +488,34 @@ app.get('/Municipalities/:country/:width?/:height?/:sep?/:size?', function(req, 
             // All tasks are done now
             if(sep && sep !== '0'){
                 //render in different iframes
-                var finalScript = '<!DOCTYPE html><html><head><title>Municipalities: ('+req.params.country+')</title></head><body>';
+                var finalScript = '<!DOCTYPE html><html><head><title>Municipalities: ('+req.params.country+')</title><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /></head><body><div class="ui cards">';
                 codes.forEach(function(item, i){
-                    finalScript = finalScript + '<iframe src="http://lda-apps.risis.ops.few.vu.nl/Municipality/'+item.municipalityID+'/400/400/'+'" width="400" height="400" style="border:none"></iframe> ';
+                    finalScript = finalScript + '<div class="ui card"><span class="top left attached ribbon ui blue label">'+item.municipalityID+': '+item.title+'</span><iframe src="http://lda-apps.risis.ops.few.vu.nl/Municipality/'+item.municipalityID+'/400/400/'+'" width="400" height="400" style="border:none"></iframe> </div>';
                 });
-                finalScript = finalScript + '</body></html>';
+                finalScript = finalScript + '</div></body></html>';
                 res.send(finalScript);
             }else{
-                var finalScript = '<!DOCTYPE html><html><head><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>PointToMunicipality: ('+req.params.country+')</title><script src="http://maps.googleapis.com/maps/api/js"></script><script> ';
+                var finalScript = '<!DOCTYPE html><html><head><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.5/leaflet.css" /><style>		.info {padding: 6px 8px;font: 14px/16px Arial, Helvetica, sans-serif;background: white;background: rgba(255,255,255,0.8);box-shadow: 0 0 15px rgba(0,0,0,0.2);border-radius: 5px;}.info h4 {margin: 0 0 5px;color: #777;}</style><title>PointToMunicipality: ('+req.params.country+')</title> ';
+                var features = [];
                 polygons.forEach(function(input, i){
-                    var points = parseVirtPolygon(input);
-                    var output = 'var arr'+i+' = [];';
+                    var points = parseVirtPolygon(input.geometry);
+                    var coordinatesArr = [];
                     points.forEach(function(el){
                         var tmp = el.split(' ');
-                        output = output + 'arr'+i+'.push(new google.maps.LatLng('+tmp[1]+','+tmp[0]+')); ';
+                        coordinatesArr.push([parseFloat(tmp[0]), parseFloat(tmp[1])])
                     })
-                      finalScript = finalScript + output;
+                    features.push({"type": "Feature", "id": input.id, "properties": {"name": input.name, "density": 1}, "geometry": {"type": "Polygon", coordinates: [coordinatesArr]}});
                       if(i === 0){
-                          finalScript = finalScript + ' function initialize(){var mapProp = {center: arr'+i+'[0],zoom:7,mapTypeId: google.maps.MapTypeId.ROADMAP};' +' var map=new google.maps.Map(document.getElementById("googleMap"),mapProp); ';
+
                       }
-                      var opacity = 0.50;
-                      var sopacity = 0.40;
-                      finalScript = finalScript + ' var regionPath'+i+'=new google.maps.Polygon({path: arr'+i+',strokeColor:"'+(colors[Math.floor(Math.random() * 8) + 1  ])+'",strokeOpacity:'+sopacity+',strokeWeight:2,fillColor:"'+(colors[Math.floor(Math.random() * 8) + 1  ])+'",fillOpacity:'+opacity+'});' + ' regionPath'+i+'.setMap(map);';
                       if(i === (polygons.length - 1 )){
-                          finalScript = finalScript + ' }';
+
                       }
-                })
-                finalScript = finalScript + ' google.maps.event.addDomListener(window, "load", initialize); '+ '</script></head><body><div class="ui segments"><div class="ui segment"><h3><a target="_blank" href="/Municipalities/'+req.params.country+'">Municipalities</a></h3></div><div class="ui segment"><div id="googleMap" style="width:'+width+'px;height:'+height+'px;"></div>'+nutsLinks.join(' ')+'</div></div></body></html>';
+                });
+                var focusPoint = features[0].geometry.coordinates[0][0];
+                var mapboxAccessToken = Config.mapboxKey;
+                var mcpData = {"type":"FeatureCollection","features": features};
+                finalScript = finalScript +  '</head><body><div class="ui segments"><div class="ui segment"><h3><a target="_blank" href="/Municipalities/'+req.params.country+'">Municipalities</a></h3></div><div class="ui segment"><div id="map" style="width:'+width+'px;height:'+height+'px;"></div>'+nutsLinks.join(' ')+'</div></div><script src="http://cdn.leafletjs.com/leaflet-0.7.5/leaflet.js"></script><script>function getColor(d) { var colors = ["#0bc4a7", "#1a48eb", "#ecdc0b", "#ed1ec6", "#d9990b", "#0c0d17", "#e3104f", "#6d8ecf", "#0bc4a7"]; return colors[Math.floor(Math.random() * 8) + 1]}	function style(feature) {return {weight: 2,opacity: 1,color: "white",dashArray: "3",fillOpacity: 0.7,fillColor: getColor(feature.properties.density)};} var map = L.map("map").setView([ '+focusPoint[1]+', '+focusPoint[0]+'], 7); var info = L.control();info.onAdd = function (map) {this._div = L.DomUtil.create("div", "info");this.update();return this._div;};info.update = function (props) {this._div.innerHTML = "<h4>Municipality: </h4>" +  (props ? ("<b>" + props.name + "</b>") : "Hover over a state");}; info.addTo(map);function highlightFeature(e) {var layer = e.target;layer.setStyle({weight: 5,color: "#666",dashArray: "",fillOpacity: 0.7}); if (!L.Browser.ie && !L.Browser.opera) { layer.bringToFront(); } info.update(layer.feature.properties); } function resetHighlight(e) { geojson.resetStyle(e.target); info.update();} function zoomToFeature(e) {map.fitBounds(e.target.getBounds());} function onEachFeature(feature, layer) {layer.on({mouseover: highlightFeature,mouseout: resetHighlight,click: zoomToFeature});}  L.tileLayer("https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}", {attribution: \'Map data &copy; <a href=\"http://openstreetmap.org\">OpenStreetMap</a> contributors, <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"http://mapbox.com\">Mapbox</a>\',maxZoom: 18,id: "mapbox.light",accessToken: "'+mapboxAccessToken+'"}).addTo(map); var geojson = L.geoJson('+JSON.stringify(mcpData)+', {style: style, onEachFeature: onEachFeature}).addTo(map);</script></body></html>';
                 res.send(finalScript);
             }
         });
