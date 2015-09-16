@@ -10,5 +10,6 @@ A set of applications which exploit RISIS Linked Data API
 - shows a point together with its containing Municipality on the map: `/PointToMunicipality/{longitude}/{latitude}` e.g.  http://lda-apps.risis.ops.few.vu.nl/PointToMunicipality/4.8650/52.3339
 - get the list of municipalities within a given NUTS region: `/NUTStoMunicipality/{code}` e.g. http://lda-apps.risis.ops.few.vu.nl/NUTStoMunicipality/NL326
 - show all the municipalities in a country on the map together with information on FUAs: `/Municipalities/{countryName}` e.g. http://lda-apps.risis.ops.few.vu.nl/Municipalities/Netherlands/1000/1000/0/
+
 # List of Geo apps
 - address to municipality (in NUTS3 level) `/addressToMunicipality` http://lda-apps.risis.ops.few.vu.nl/addressToMunicipality
