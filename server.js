@@ -46,7 +46,7 @@ app.post('/addressToMunicipality', function(req, res) {
         res.send('Please add an address in the URI: /geocode/{your address}');
         return 0;
     }
-    var longitude, latitude, nCode;
+    var longitude, latitude, nCode, mCode;
     var apiKey = Config.googleKey;
     var apiURI = 'https://maps.googleapis.com/maps/api/geocode/json?address='+encodeURIComponent(decodeURIComponent(req.body.addr))+'&key=' + apiKey;
     rp.get({uri: apiURI}).then(function(body){
@@ -78,7 +78,19 @@ app.post('/addressToMunicipality', function(req, res) {
                         }
                     }
                 });
-                res.render('addressToMunicipality', {input: req.body.addr, address: encodeURIComponent(req.body.addr), point:{long: longitude, lat: latitude}, nCode: nCode ? nCode : (n2 ? n2 : (n1 ? n1 : ''))});
+                //---find mcp id
+                var apiURI2 = 'http://api.risis.ops.few.vu.nl/PointToMunicipality.json?long='+longitude+'&lat='+latitude;
+                rp.get({uri: apiURI2}).then(function(body3){
+                    var parsed = JSON.parse(body3);
+                    if(parsed && parsed.result){
+                        mCode = parsed.result.primaryTopic.occursIn.municipalityID;
+                    }
+                    res.render('addressToMunicipality', {input: req.body.addr, address: encodeURIComponent(req.body.addr), point:{long: longitude, lat: latitude}, mCode: mCode ? mCode : '', nCode: nCode ? nCode : (n2 ? n2 : (n1 ? n1 : ''))});
+                }).catch(function (err) {
+                    console.log(err);
+                    res.send('');
+                    return 0;
+                });
             }).catch(function (err) {
                 console.log(err);
                 res.send('');
@@ -128,6 +140,24 @@ app.get('/NUTStoMunicipality/:code?', function(req, res) {
         parsed.result.items.forEach(function(el){
             output = output + '<tr><td>'+el.title+' (<small><a href="https://en.wikipedia.org/wiki/'+encodeURIComponent(el.functionalUrbanArea.title)+'" target="_blank">'+el.functionalUrbanArea.title+'</a></small>)</td><td>'+el.municipalityID+' (<small><a href="https://en.wikipedia.org/wiki/'+encodeURIComponent(el.functionalUrbanArea.title)+'" target="_blank">'+el.functionalUrbanArea.code+'</a></small>)</td><td class="right aligned">'+(parseInt(el.isCore) ? '<i class="ui big green checkmark icon"></i>' : '')+'</td></tr>';
         });
+        output = output + '  </tbody></table></div></div></body></html>';
+        res.send(output);
+    }).catch(function (err) {
+        console.log(err);
+        res.send('');
+        return 0;
+    });
+});
+app.get('/MunicipalityToFUA/:code?', function(req, res) {
+    if(!req.params.code){
+        res.send('Please enter the Municipality code! /MunicipalityToFUA/{code}');
+        return 0;
+    }
+    var apiURI = 'http://api.risis.ops.few.vu.nl/MunicipalityToPolygon/' + req.params.code + '.json';
+    rp.get({uri: apiURI}).then(function(body){
+        var parsed = JSON.parse(body);
+        var output = '<!DOCTYPE html><html><head><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>NUTStoMunicipality</title></head><body><div class="ui segments"><div class="ui segment"><h3><a target="_blank" href="/MunicipalityToFUA/'+req.params.code+'">Municipality to FUA</a> <span class="ui label">'+req.params.code+'</span></h3></div><div class="ui segment"><table class="ui unstackable table"><thead><tr><th>Name (<small>FUA</small>)</th><th>Code (<small>FUA</small>)</th> <th class="right aligned">is Core ?</th></tr></thead><tbody>';
+        output = output + '<tr><td>'+parsed.result.primaryTopic.label+' (<small><a href="https://en.wikipedia.org/wiki/'+encodeURIComponent(parsed.result.primaryTopic.label)+'" target="_blank">'+parsed.result.primaryTopic.functionalUrbanArea.title+'</a></small>)</td><td>'+req.params.code+' (<small><a href="https://en.wikipedia.org/wiki/'+encodeURIComponent(parsed.result.primaryTopic.functionalUrbanArea.title)+'" target="_blank">'+parsed.result.primaryTopic.functionalUrbanArea.fuaID+'</a></small>)</td><td class="right aligned">'+(parseInt(parsed.result.primaryTopic.isCore) ? '<i class="ui big green checkmark icon"></i>' : '')+'</td></tr>';
         output = output + '  </tbody></table></div></div></body></html>';
         res.send(output);
     }).catch(function (err) {

@@ -47,12 +47,28 @@
                      {{/point}}
                 </div>
                 <div class="eight wide column">
+                    {{#point}}
+                    <div class="ui cards">
+                            <span class="top left attached ribbon ui blue label">2</span>
+                             <iframe src="/PointToMunicipality/{{point.long}}/{{point.lat}}" height="500" width="500" style="border:none;overflow: scroll;"></iframe>
+                     </div>
+                     {{/point}}
+                </div>
+                <div class="eight wide column">
                     {{#nCode}}
                     <div class="ui cards">
                             <span class="top left attached ribbon ui blue label">3</span>
                              <iframe src="/NUTStoMunicipality/{{nCode}}" height="500" width="100%" style="border:none;overflow: scroll;"></iframe>
                      </div>
                      {{/nCode}}
+                </div>
+                <div class="eight wide column">
+                    {{#mCode}}
+                    <div class="ui cards">
+                            <span class="top left attached ribbon ui blue label">3</span>
+                             <iframe src="/MunicipalityToFUA/{{mCode}}" height="500" width="100%" style="border:none;overflow: scroll;"></iframe>
+                     </div>
+                     {{/mCode}}
                 </div>
             </div>
         </div>
