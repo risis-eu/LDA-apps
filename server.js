@@ -83,7 +83,13 @@ app.post('/addressToMunicipality', function(req, res) {
                 rp.get({uri: apiURI2}).then(function(body3){
                     var parsed = JSON.parse(body3);
                     if(parsed && parsed.result){
-                        mCode = parsed.result.primaryTopic.occursIn.municipalityID;
+                    	if(Array.isArray(parsed.result.primaryTopic.occursIn)){
+                    		//now just get the first results
+                    		mCode = parsed.result.primaryTopic.occursIn[0].municipalityID;
+                   		 }else{
+                   		 	mCode = parsed.result.primaryTopic.occursIn.municipalityID;
+                   		 }
+                        
                     }
                     res.render('addressToMunicipality', {input: req.body.addr, address: encodeURIComponent(req.body.addr), point:{long: longitude, lat: latitude}, mCode: mCode ? mCode : '', nCode: nCode ? nCode : (n2 ? n2 : (n1 ? n1 : ''))});
                 }).catch(function (err) {
