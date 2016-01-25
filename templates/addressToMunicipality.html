@@ -70,6 +70,14 @@
                      </div>
                      {{/mCode}}
                 </div>
+                <div class="eight wide column">
+                    {{#point}}
+                    <div class="ui cards">
+                            <span class="top left attached ribbon ui blue label">2</span>
+                             <iframe src="/PointToOSMAdminBoundaries/{{point.long}}/{{point.lat}}" height="500" width="100%" style="border:none;overflow: scroll;"></iframe>
+                     </div>
+                     {{/point}}
+                </div>
             </div>
         </div>
     </body>
