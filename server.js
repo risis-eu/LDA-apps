@@ -89,7 +89,7 @@ app.post('/addressToMunicipality', function(req, res) {
                    		 }else{
                    		 	mCode = parsed.result.primaryTopic.occursIn.municipalityID;
                    		 }
-                        
+
                     }
                     res.render('addressToMunicipality', {input: req.body.addr, address: encodeURIComponent(req.body.addr), point:{long: longitude, lat: latitude}, mCode: mCode ? mCode : '', nCode: nCode ? nCode : (n2 ? n2 : (n1 ? n1 : ''))});
                 }).catch(function (err) {
@@ -137,12 +137,13 @@ app.get('/NUTStoMunicipality/:code?', function(req, res) {
         res.send('Please enter the NUTS code! /NUTStoMunicipality/{code}');
         return 0;
     }
-    var apiURI = 'http://api.risis.ops.few.vu.nl/NUTStoMunicipality/' + req.params.code + '.json?_pageSize=all';
-    rp.get({uri: apiURI}).then(function(body){
+    //now is only handled internally
+    var query= 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX dcterms: <http://purl.org/dc/terms/> PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> PREFIX geoname: <http://www.geonames.org/ontology#> PREFIX geoV: <http://geo.risis.eu/vocabulary/> PREFIX edm: <http://www.europeana.eu/schemas/edm/> PREFIX ramon: <http://rdfdata.eionet.europa.eu/ramon/ontology/> SELECT ?name ?code WHERE { GRAPH <http://nuts.geovocab.org/> {<http://nuts.geovocab.org/id/'+req.params.code+'> geo:geometry ?polygon . } GRAPH <http://geo.risis.eu/shapefiles> { ?mcp a geoV:Municipality ; geoV:municipalityID ?code ; dcterms:title ?name ; edm:country ?country ; geo:geometry ?polygon2 . FILTER (bif:st_intersects (bif:st_geomfromtext(STR(?polygon)), bif:st_geomfromtext(STR(?polygon2) )))}} ';
+    rp.get({uri: 'http://sparql.risis.ops.few.vu.nl/?query='+encodeURIComponent(query)+'&format=application%2Fsparql-results%2Bjson'}).then(function(body){
         var parsed = JSON.parse(body);
-        var output = '<!DOCTYPE html><html><head><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>NUTStoMunicipality</title></head><body><div class="ui segments"><div class="ui segment"><h3><a target="_blank" href="/NUTStoMunicipality/'+req.params.code+'">NUTS to Municipality</a> <span class="ui label">'+req.params.code+'</span></h3></div><div class="ui segment"><table class="ui unstackable table"><thead><tr><th>Name (<small>FUA</small>)</th><th>Code (<small>FUA</small>)</th> <th class="right aligned">is Core ?</th></tr></thead><tbody>';
-        parsed.result.items.forEach(function(el){
-            output = output + '<tr><td>'+el.title+' (<small><a href="https://en.wikipedia.org/wiki/'+encodeURIComponent(el.functionalUrbanArea.title)+'" target="_blank">'+el.functionalUrbanArea.title+'</a></small>)</td><td>'+el.municipalityID+' (<small><a href="https://en.wikipedia.org/wiki/'+encodeURIComponent(el.functionalUrbanArea.title)+'" target="_blank">'+el.functionalUrbanArea.code+'</a></small>)</td><td class="right aligned">'+(parseInt(el.isCore) ? '<i class="ui big green checkmark icon"></i>' : '')+'</td></tr>';
+        var output = '<!DOCTYPE html><html><head><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>NUTStoMunicipality</title></head><body><div class="ui segments"><div class="ui segment"><h3><a target="_blank" href="">NUTS to Municipality</a> <span class="ui label">'+req.params.code+'</span></h3></div><div class="ui segment"><table class="ui unstackable table"><thead><tr><th>Name</th><th>Code</th><tbody>';
+        parsed.results.bindings.forEach(function(el){
+            output = output + '<tr><td><a href="https://en.wikipedia.org/wiki/'+encodeURIComponent(el.name.value)+'" target="_blank">'+el.name.value+'</a></td><td>'+el.code.value+' </td></tr>';
         });
         output = output + '  </tbody></table></div></div></body></html>';
         res.send(output);
@@ -151,6 +152,21 @@ app.get('/NUTStoMunicipality/:code?', function(req, res) {
         res.send('');
         return 0;
     });
+
+    // var apiURI = 'http://api.risis.ops.few.vu.nl/NUTStoMunicipality/' + req.params.code + '.json?_pageSize=all';
+    // rp.get({uri: apiURI}).then(function(body){
+    //     var parsed = JSON.parse(body);
+    //     var output = '<!DOCTYPE html><html><head><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /><title>NUTStoMunicipality</title></head><body><div class="ui segments"><div class="ui segment"><h3><a target="_blank" href="/NUTStoMunicipality/'+req.params.code+'">NUTS to Municipality</a> <span class="ui label">'+req.params.code+'</span></h3></div><div class="ui segment"><table class="ui unstackable table"><thead><tr><th>Name (<small>FUA</small>)</th><th>Code (<small>FUA</small>)</th> <th class="right aligned">is Core ?</th></tr></thead><tbody>';
+    //     parsed.result.items.forEach(function(el){
+    //         output = output + '<tr><td>'+el.title+' (<small><a href="https://en.wikipedia.org/wiki/'+encodeURIComponent(el.functionalUrbanArea.title)+'" target="_blank">'+el.functionalUrbanArea.title+'</a></small>)</td><td>'+el.municipalityID+' (<small><a href="https://en.wikipedia.org/wiki/'+encodeURIComponent(el.functionalUrbanArea.title)+'" target="_blank">'+el.functionalUrbanArea.code+'</a></small>)</td><td class="right aligned">'+(parseInt(el.isCore) ? '<i class="ui big green checkmark icon"></i>' : '')+'</td></tr>';
+    //     });
+    //     output = output + '  </tbody></table></div></div></body></html>';
+    //     res.send(output);
+    // }).catch(function (err) {
+    //     console.log(err);
+    //     res.send('');
+    //     return 0;
+    // });
 });
 app.get('/MunicipalityToFUA/:code?', function(req, res) {
     if(!req.params.code){
