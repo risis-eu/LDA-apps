@@ -393,7 +393,7 @@ app.get('/PointToNUTS/:long?/:lat?/:width?/:height?/:sep?', function(req, res) {
 
 });
 
-app.get('/PointToOSM/:long?/:lat?', function(req, res) {
+app.get('/PointToOSMAdminBoundaries/:long?/:lat?', function(req, res) {
     if(!req.params.lat || !req.params.long){
         res.send('');
         return 0;
