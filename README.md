@@ -11,7 +11,7 @@ A set of applications which exploit RISIS Linked Data API
 - get the list of municipalities within a given NUTS region: `/NUTStoMunicipality/{code}` e.g. http://lda-apps.risis.ops.few.vu.nl/NUTStoMunicipality/NL326
 - get the FUA for a given Municipality: `/MunicipalityToFUA/{code}` e.g. http://lda-apps.risis.ops.few.vu.nl/MunicipalityToFUA/NL270363
 - show all the municipalities in a country on the map together with information on FUAs: `/Municipalities/{countryName}` e.g. http://lda-apps.risis.ops.few.vu.nl/Municipalities/Netherlands/1000/1000/0/
-- show all administrative boundaries of a given point using OpenStreetMap service and MapIt service: `/PointToOSM/{longitude}/{latitude}` e.g. http://lda-apps.risis.ops.few.vu.nl/PointToOSM/4.8650/52.3339
+- show all administrative boundaries of a given point using OpenStreetMap service and MapIt service: `/PointToOSMAdminBoundaries/{longitude}/{latitude}` e.g. http://lda-apps.risis.ops.few.vu.nl/PointToOSMAdminBoundaries/4.8650/52.3339
  
 
 # List of Geo apps
