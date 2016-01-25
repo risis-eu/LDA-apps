@@ -406,7 +406,7 @@ app.get('/PointToOSMAdminBoundaries/:long?/:lat?', function(req, res) {
             admins[parsed[item]['type']] = '<a href="http://global.mapit.mysociety.org/area/'+parsed[item]['id']+'.html" target="_blank">'+parsed[item]['name']+ '</a>';
         }
         //console.log(admins);
-        var finalScript = '<!DOCTYPE html><html><head><title>PointToOSM: ('+req.params.lat+','+req.params.long+') </title><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /></head><body><div class="ui segment"><div class="ui list"><div class=" ui list l1">1.'+(admins['O01']? admins['O01'] : '-' )+'<div class=" ui list l2">2.'+(admins['O02']? admins['O02'] : '-' )+'<div class=" ui list l3">3.'+(admins['O03']? admins['O03'] : '-' )+'<div class=" ui list l4">4.'+(admins['O04']? admins['O04'] : '-' )+'<div class=" ui list l5">5.'+(admins['O05']? admins['O05'] : '-' )+'<div class=" ui list l6">6.'+(admins['O06']? admins['O06'] : '-' )+'<div class=" ui list l7">7.'+(admins['O07']? admins['O07'] : '-' )+'<div class=" ui list l8">8.'+(admins['O08']? '<span class="ui label ">'+admins['O08']+'</span> -> LAU-2' : '-' )+'<div class=" ui list l9">9.'+(admins['O09']? admins['O09'] : '-' )+'<div class=" ui list l10">10.'+(admins['O10']? admins['O10'] : '-' )+'<div class=" ui list l11">11.'+(admins['O11']? admins['O11'] : '-' )+'</div></div></div></div></div></div></div></div></div></div></div> </div></body></html>';
+        var finalScript = '<!DOCTYPE html><html><head><title>PointToOSMAdminBoundaries: ('+req.params.lat+','+req.params.long+') </title><link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.3/semantic.min.css" rel="stylesheet" type="text/css" /></head><body><div class="ui segments"><div class="ui segment"><h3><a target="_blank" href="/PointToOSMAdminBoundaries/'+req.params.long+'/'+req.params.lat+'">PointToOSMAdminBoundaries</a></h3></div><div class="ui segment"><div class="ui list"><div class=" ui list l1">1.'+(admins['O01']? admins['O01'] : '-' )+'<div class=" ui list l2">2.'+(admins['O02']? admins['O02'] : '-' )+'<div class=" ui list l3">3.'+(admins['O03']? admins['O03'] : '-' )+'<div class=" ui list l4">4.'+(admins['O04']? admins['O04'] : '-' )+'<div class=" ui list l5">5.'+(admins['O05']? admins['O05'] : '-' )+'<div class=" ui list l6">6.'+(admins['O06']? admins['O06'] : '-' )+'<div class=" ui list l7">7.'+(admins['O07']? admins['O07'] : '-' )+'<div class=" ui list l8">8.'+(admins['O08']? '<span class="ui label ">'+admins['O08']+'</span> -> LAU-2' : '-' )+'<div class=" ui list l9">9.'+(admins['O09']? admins['O09'] : '-' )+'<div class=" ui list l10">10.'+(admins['O10']? admins['O10'] : '-' )+'<div class=" ui list l11">11.'+(admins['O11']? admins['O11'] : '-' )+'</div></div></div></div></div></div></div></div></div></div></div> </div></div></body></html>';
         res.send(finalScript);
 
     }).catch(function (err) {
@@ -414,6 +414,13 @@ app.get('/PointToOSMAdminBoundaries/:long?/:lat?', function(req, res) {
         res.send('');
         return 0;
     });
+});
+app.get('/PointToFUA/:long?/:lat?', function(req, res) {
+    if(!req.params.lat || !req.params.long){
+        res.send('');
+        return 0;
+    }
+    //to be added
 });
 
 app.get('/PointToMunicipality/:long?/:lat?/:width?/:height?/:sep?', function(req, res) {
